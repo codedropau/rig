@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  php-fpm-xdebug:
+    environment:
+      - XDEBUG_CONFIG=remote_host=host.docker.internal
+
+  php-cli-xdebug:
+    environment:
+      - XDEBUG_CONFIG=remote_host=host.docker.internal
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=host.docker.internal,rw,nolock,hard,nointr,nfsvers=3
+      device: ":${PWD}"

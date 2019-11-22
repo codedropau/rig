@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  k3s:
+    # https://k3s.io
+    image: rancher/k3s:v0.8.1
+    command: server --node-name=k3s --no-deploy=traefik --no-deploy=servicelb
+    privileged: true
+    ports:
+      - "6443:6443"
+    environment:
+      - K3S_KUBECONFIG_OUTPUT=/output/config
+      - K3S_KUBECONFIG_MODE=666
+    tmpfs:
+      - /run
+      - /var/run
+    volumes:
+      - ./.kube:/output
+      - ./local/config.toml.tmpl:/var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+      - ./local/registry.yaml:/var/lib/rancher/k3s/server/manifests/registry.yaml
+    networks:
+      internal:
+        ipv4_address: 10.6.0.2
+
+  registry.rig.svc.cluster.local:
+    image: registry:2.6
+    ports:
+      - "5000:5000"
+    networks:
+      internal:
+        ipv4_address: 10.6.0.3
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 10.6.0.0/24

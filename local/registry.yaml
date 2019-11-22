@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rig
+---
+# This is required as Docker Compose DNS entries don't work inside K8s pods.
+# To fix this we just:
+#   * /etc/hosts for outside Docker Compose
+#   * Docker Compose DNS for the Kubelet.
+#   * Service for inside the Cluster for the Pod.
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry
+  namespace: rig
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: registry
+  namespace: rig
+subsets:
+  - addresses:
+      - ip: 10.6.0.3 # See docker-compose.yml for this IP.
+    ports:
+      - port: 5000

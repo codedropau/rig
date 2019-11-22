@@ -1,0 +1,8 @@
+dockerfiles:
+  - docker-compose.yml
+  - docker-compose.rig.yml
+
+services:
+  - nginx
+  - php-fpm
+  - mysql-default
