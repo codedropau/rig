@@ -15,7 +15,7 @@ type Params struct {
 }
 
 func All(ctx context.Context, cli *client.Client, params Params) error {
-	err := Containers(ctx, cli, params)
+	err := snapshotContainers(ctx, cli, params)
 	if err != nil {
 		return errors.Wrap(err, "failed to snapshot container")
 	}

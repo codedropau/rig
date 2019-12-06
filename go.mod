@@ -1,4 +1,4 @@
-module github.com/nickschuch/rig
+module github.com/codedropau/rig
 
 go 1.13
 
@@ -8,10 +8,15 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/docker/docker v1.4.2-0.20190927142053-ada3c14355ce
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/fatih/color v1.7.0 // indirect
 	github.com/fsouza/go-dockerclient v1.5.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
+	github.com/gosuri/uitable v0.0.4
 	github.com/imdario/mergo v0.3.8 // indirect
+	github.com/mattn/go-colorable v0.1.4 // indirect
+	github.com/mattn/go-isatty v0.0.10 // indirect
+	github.com/mattn/go-runewidth v0.0.7 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
