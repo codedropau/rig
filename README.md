@@ -29,7 +29,7 @@ project: example
 services:
   nginx: {}
   php-fpm: {}
-  mysql: {}
+  mysql:
     cpu: 150m
     mem: 512Mi
 ```
