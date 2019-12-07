@@ -49,6 +49,12 @@ $ rig run demo 0.0.1 demo.example.com
 
 # OPTIONAL: Provision a second stack using the same images!
 $ rig run demo2 0.0.1 demo2.example.com
+
+# Review the currently running environments
+$ rig list
+NAME    VERSION DOMAINS             SERVICES
+demo    0.0.1   [demo.example.com]  [nginx php-fpm mysql]
+demo2   0.0.1   [demo2.example.com] [nginx php-fpm mysql]
 ```
 
 ## Local Development Environment
