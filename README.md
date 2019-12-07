@@ -3,11 +3,62 @@ Rig
 
 _A rig is an arrangement of items used for fishing. It can be assembled of one or more lines, hooks, sinkers, bobbers, swivels, lures, beads, and other fishing tackle. A rig might be held by a rod, by hand, or attached to a boat or pier._
 
+## Usage
+
+**Prepare**
+
+```bash
+# Bring the stack up.
+$ docker-compose up
+
+# Perform some operations to prepare the environment:
+#  * Prepare dependencies
+#  * Download static assets
+#  * Run a migration
+
+# Down the stack to avoid data issues eg. let MySQL shutdown gracefully.
+$ docker-compose down
+```
+
+**Configure**
+
+```bash
+$ cat .rig.yml 
+project: example
+
+services:
+  - nginx
+  - php-fpm
+  - mysql
+```
+
+**Snapshot and Run**
+
+```bash
+$ export RIG_NAMESPACE=default
+$ export RIG_REPOSITORY=registry/example
+$ export KUBECONFIG=/some/.kube/config
+
+# Snapshot the local Docker Compose stack and push to the registry.
+$ rig snapshot 0.0.1
+
+# Run the stack on a remote Kubernetes environment.
+$ rig run demo 0.0.1 demo.example.com
+
+# OPTIONAL: Provision a second stack using the same images!
+$ rig run demo2 0.0.1 demo2.example.com
+```
+
 ## Local Development Environment
 
 ### Docker Compose
 
 The entire stack is managed by Docker Compose.
+
+It consists of:
+
+* Kubernetes
+* Image Registry
 
 To spin it up run the following:
 
