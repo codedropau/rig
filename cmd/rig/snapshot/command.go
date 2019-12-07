@@ -41,7 +41,7 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		Services:   services,
 		Repository: cmd.Repository,
 		Tag:        cmd.Tag,
-		Config: cfg,
+		Config:     cfg,
 	}
 
 	err = snapshot.All(ctx, cli, params)
