@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"context"
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/docker/docker/client"
@@ -24,6 +25,11 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		return err
 	}
 
+	dc, err := composeconfig.Load(cfg.Dockerfiles)
+	if err != nil {
+		return err
+	}
+
 	ctx := context.Background()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -41,6 +47,7 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		Services:   services,
 		Repository: cmd.Repository,
 		Tag:        cmd.Tag,
+		Compose: dc,
 		Config:     cfg,
 	}
 

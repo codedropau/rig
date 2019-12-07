@@ -3,6 +3,8 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
+	stringutils "github.com/codedropau/rig/internal/utils/string"
 	"os"
 
 	"github.com/docker/docker/api/types"
@@ -30,20 +32,26 @@ func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) err
 			continue
 		}
 
+		name := volume.Labels[LabelVolume]
+
+		if !referencedInServices(params.Compose.Services, params.Services, name) {
+			continue
+		}
+
 		dir, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 
-		dockerfilePath := fmt.Sprintf("%s/.rig/volume/%s.dockerfile", dir, volume.Labels[LabelVolume])
+		dockerfilePath := fmt.Sprintf("%s/.rig/volume/%s.dockerfile", dir, name)
 
-		tag := fmt.Sprintf("%s-volume-%s", params.Tag, volume.Labels[LabelVolume])
+		tag := fmt.Sprintf("%s-volume-%s", params.Tag, name)
 
 		if _, ok := volume.Options["device"]; !ok {
-			return fmt.Errorf("cannot find device for volume: %s", volume.Labels[LabelVolume])
+			return fmt.Errorf("cannot find device for volume: %s", name)
 		}
 
-		fmt.Printf("Snapshotting volume '%s' to '%s:%s'\n", volume.Labels[LabelVolume], params.Repository, tag)
+		fmt.Printf("Snapshotting volume '%s' to '%s:%s'\n", name, params.Repository, tag)
 
 		tmpl := "FROM %s\nWORKDIR /volume\nADD --chown=%s:%s %s /volume"
 
@@ -96,4 +104,19 @@ func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) err
 	}
 
 	return nil
+}
+
+// Helper function to check if a volume is referenced in the list of Services requested by the user.
+func referencedInServices(services map[string]*composeconfig.Service, allowed []string, volume string) bool {
+	for name, service := range services {
+		if !stringutils.Contains(allowed, name) {
+			continue
+		}
+
+		if service.MountsVolume(volume) {
+			return true
+		}
+	}
+
+	return false
 }

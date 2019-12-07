@@ -61,8 +61,6 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 			continue
 		}
 
-		// @todo, Lookup the Ingress for the domains.
-
 		table.AddRow(pod.ObjectMeta.Name, version, getDomains(ingressList, pod.ObjectMeta.Name), getServices(pod))
 	}
 

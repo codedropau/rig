@@ -102,34 +102,6 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 		ObjectMeta: metadata,
 	}
 
-	for name := range params.Compose.Volumes {
-		// @todo, Filter the volumes.
-
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
-			Name:  fmt.Sprintf("volume-%s-cp", name),
-			Image: fmt.Sprintf("%s:%s-volume-%s", params.Repository, params.Tag, name),
-			Command: []string{
-				"/bin/sh", "-c",
-			},
-			Args: []string{
-				fmt.Sprintf("cp -rp . %s/", MountVolume),
-			},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      name,
-					MountPath: MountVolume,
-				},
-			},
-		})
-
-		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
-			Name: name,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		})
-	}
-
 	for name, service := range params.Compose.Services {
 		if _, ok := params.Config.Services[name]; !ok {
 			continue
@@ -185,6 +157,36 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 		}
 
 		pod.Spec.Containers = append(pod.Spec.Containers, container)
+	}
+
+	for name := range params.Compose.Volumes {
+		if !mountedInContainers(pod.Spec.Containers, name) {
+			continue
+		}
+
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
+			Name:  fmt.Sprintf("volume-%s-cp", name),
+			Image: fmt.Sprintf("%s:%s-volume-%s", params.Repository, params.Tag, name),
+			Command: []string{
+				"/bin/sh", "-c",
+			},
+			Args: []string{
+				fmt.Sprintf("cp -rp . %s/", MountVolume),
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      name,
+					MountPath: MountVolume,
+				},
+			},
+		})
+
+		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+			Name: name,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
 	}
 
 	_, err := clientset.CoreV1().Pods(metadata.Namespace).Create(pod)
@@ -274,4 +276,16 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 	}
 
 	return nil
+}
+
+func mountedInContainers(containers []corev1.Container, name string) bool {
+	for _, container := range containers {
+		for _, mount := range container.VolumeMounts {
+			if mount.Name == name {
+				return true
+			}
+		}
+	}
+
+	return false
 }

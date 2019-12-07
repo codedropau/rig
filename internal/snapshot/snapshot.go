@@ -3,9 +3,10 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"github.com/codedropau/rig/internal/config"
-
 	"github.com/docker/docker/client"
+
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
+	"github.com/codedropau/rig/internal/config"
 )
 
 // Params passed to the All function.
@@ -13,6 +14,7 @@ type Params struct {
 	Services   []string
 	Repository string
 	Tag        string
+	Compose *composeconfig.Config
 	Config     *config.Config
 }
 
