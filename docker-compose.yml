@@ -3,7 +3,7 @@ version: '3'
 services:
   k3s:
     # https://k3s.io
-    image: rancher/k3s:v0.8.1
+    image: rancher/k3s:v1.0.0
     command: server --node-name=k3s --no-deploy=traefik --no-deploy=servicelb
     privileged: true
     ports:
@@ -16,7 +16,7 @@ services:
       - /var/run
     volumes:
       - ./.kube:/output
-      - ./local/config.toml.tmpl:/var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+      - ./local/registries.yaml:/etc/rancher/k3s/registries.yaml
       - ./local/registry.yaml:/var/lib/rancher/k3s/server/manifests/registry.yaml
     networks:
       internal:

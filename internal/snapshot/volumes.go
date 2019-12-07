@@ -3,18 +3,20 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	dockerauth "github.com/nickschuch/rig/internal/docker/auth"
-	"github.com/nickschuch/rig/internal/docker/buildctx"
-	"github.com/nickschuch/rig/internal/docker/stream"
-	"github.com/nickschuch/rig/internal/utils/file"
-	"github.com/pkg/errors"
-	"os"
+
+	dockerauth "github.com/codedropau/rig/internal/docker/auth"
+	"github.com/codedropau/rig/internal/docker/buildctx"
+	"github.com/codedropau/rig/internal/docker/stream"
+	"github.com/codedropau/rig/internal/utils/file"
 )
 
-func Volumes(ctx context.Context, cli *client.Client, params Params) error {
+// Helper function to snapshot volumes associated with a project.
+func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) error {
 	projectFilter := filters.NewArgs()
 	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Project))
 
@@ -37,13 +39,15 @@ func Volumes(ctx context.Context, cli *client.Client, params Params) error {
 
 		tag := fmt.Sprintf("%s-volume-%s", params.Tag, volume.Labels[LabelVolume])
 
-		if _, ok :=  volume.Options["device"]; !ok {
+		if _, ok := volume.Options["device"]; !ok {
 			return fmt.Errorf("cannot find device for volume: %s", volume.Labels[LabelVolume])
 		}
 
 		fmt.Printf("Snapshotting volume '%s' to '%s:%s'\n", volume.Labels[LabelVolume], params.Repository, tag)
 
-		err = file.Write(dockerfilePath, fmt.Sprintf("FROM alpine:latest\nWORKDIR /volume\nADD --chown=1000:1000 %s /volume", volume.Options["device"]))
+		tmpl := "FROM %s\nWORKDIR /volume\nADD --chown=%s:%s %s /volume"
+
+		err = file.Write(dockerfilePath, fmt.Sprintf(tmpl, params.Config.Volume.From, params.Config.Volume.User, params.Config.Volume.Group, volume.Options["device"]))
 		if err != nil {
 			return err
 		}
@@ -64,7 +68,7 @@ func Volumes(ctx context.Context, cli *client.Client, params Params) error {
 			},
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to build image")
+			return fmt.Errorf("failed to build image: %w", err)
 		}
 
 		err = stream.Build(os.Stdout, output.Body)
@@ -72,6 +76,7 @@ func Volumes(ctx context.Context, cli *client.Client, params Params) error {
 			return err
 		}
 
+		// @todo, Needs authentication.
 		auth, err := dockerauth.Base64("user", "password")
 		if err != nil {
 			return err

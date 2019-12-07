@@ -3,9 +3,9 @@ package auth
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/docker/docker/api/types"
-	"github.com/pkg/errors"
 )
 
 // Base64 encode the Docker registry authentication credentials.
@@ -17,7 +17,7 @@ func Base64(username, password string) (string, error) {
 
 	authBytes, err := json.Marshal(auth)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal auth")
+		return "", fmt.Errorf("failed to marshal auth: %w", err)
 	}
 
 	return base64.URLEncoding.EncodeToString(authBytes), nil

@@ -3,17 +3,18 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"github.com/nickschuch/rig/internal/docker/stream"
 	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
-	dockerauth "github.com/nickschuch/rig/internal/docker/auth"
+	dockerauth "github.com/codedropau/rig/internal/docker/auth"
+	"github.com/codedropau/rig/internal/docker/stream"
 )
 
-func Containers(ctx context.Context, cli *client.Client, params Params) error {
+// Helper function to snapshot containers associated with a project.
+func snapshotContainers(ctx context.Context, cli *client.Client, params Params) error {
 	projectFilter := filters.NewArgs()
 	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Project))
 

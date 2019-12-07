@@ -22,10 +22,6 @@ func TestLoad(t *testing.T) {
 					"data:/data",
 					"files:/data/app/sites/default/files",
 				},
-				Ports: []string{
-					"8080:8080",
-					"3306:3306",
-				},
 			},
 			"php-fpm": {
 				Image: "skpr/php-fpm:7.3-1.x-dev",
@@ -69,9 +65,6 @@ func TestLoad(t *testing.T) {
 			},
 			"mailhog": {
 				Image: "mailhog/mailhog",
-				Ports: []string{
-					"8025:8025",
-				},
 			},
 		},
 		Volumes: map[string]*Volume{

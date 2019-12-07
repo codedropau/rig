@@ -26,7 +26,7 @@ func Build(w io.Writer, stream io.ReadCloser) error {
 			panic(err)
 		}
 
-		fmt.Printf(s.Stream)
+		fmt.Fprintf(w, s.Stream)
 	}
 
 	return nil

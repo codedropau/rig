@@ -2,27 +2,31 @@ package snapshot
 
 import (
 	"context"
+	"fmt"
+	"github.com/codedropau/rig/internal/config"
 
 	"github.com/docker/docker/client"
-	"github.com/pkg/errors"
 )
 
+// Params passed to the All function.
 type Params struct {
-	Project string
-	Services []string
+	Project    string
+	Services   []string
 	Repository string
-	Tag string
+	Tag        string
+	Config *config.Config
 }
 
+// All containers and volumes related to a project.
 func All(ctx context.Context, cli *client.Client, params Params) error {
 	err := snapshotContainers(ctx, cli, params)
 	if err != nil {
-		return errors.Wrap(err, "failed to snapshot container")
+		return fmt.Errorf("failed to snapshot container: %w", err)
 	}
 
-	err = Volumes(ctx, cli, params)
+	err = snapshotVolumes(ctx, cli, params)
 	if err != nil {
-		return errors.Wrap(err, "failed to snapshot volume")
+		return fmt.Errorf("failed to snapshot volume: %w", err)
 	}
 
 	return nil

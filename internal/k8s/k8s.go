@@ -2,85 +2,109 @@ package k8s
 
 import (
 	"fmt"
+	"github.com/codedropau/rig/cmd/rig/version"
 
+	corev1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 
-	stringutils "github.com/nickschuch/rig/internal/utils/string"
-	composeconfig "github.com/nickschuch/rig/internal/compose/config"
-	"github.com/nickschuch/rig/internal/config"
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
+	"github.com/codedropau/rig/internal/config"
+	stringutils "github.com/codedropau/rig/internal/utils/string"
 )
 
 const (
+	// AnnotationTTL is used to define how long an environment should be available for.
 	AnnotationTTL = "rig.io/ttl"
+	// AnnotationRigVersion is used to determine what version of Rig provisioned his resource.
+	AnnotationRigVersion = "rig.io/version"
+	// AnnotationRigCommit is used to determine what commit of Rig provisioned his resource.
+	AnnotationRigCommit = "rig.io/commit"
+	// LabelName is used to discovery an object.
 	LabelName = "app.kubernetes.io/name"
+	// LabelInstance is used to discovery an object.
 	LabelInstance = "app.kubernetes.io/instance"
+	// LabelVersion is used to discovery an object.
 	LabelVersion = "app.kubernetes.io/version"
+	// LabelManagedBy is used to discovery an object.
 	LabelManagedBy = "app.kubernetes.io/managed-by"
 )
 
+const (
+	// MountVolume for copying volume contents into an EmptyDir.
+	MountVolume = "/mnt/volume"
+)
+
+// Params used to create Kubernetes objects.
 type Params struct {
 	Project string
 
+	// Metadata applied to Kubernetes objects.
 	Namespace string
-	Name string
+	Name      string
 
+	// Information used to run the correct images.
 	Repository string
-	Tag string
+	Tag        string
 
+	// Domains which the environment will be accessible from.
 	Domains []string
 
 	// Compose is a loaded Docker Compose configuration which is used to build a Pod.
 	Compose *composeconfig.Config
-	Config config.Config
+	Config  *config.Config
 }
 
+// Apply objects to the Kubernetes cluster.
 func Apply(clientset kubernetes.Interface, params Params) error {
 	grace := int64(0)
 
-	objectmeta := metav1.ObjectMeta{
-		Name: params.Name,
+	metadata := metav1.ObjectMeta{
+		Name:      params.Name,
 		Namespace: params.Namespace,
 		Annotations: map[string]string{
-			// @todo Configurable.
-			AnnotationTTL: "24h",
+			AnnotationTTL: params.Config.Retention.String(),
+			AnnotationRigVersion: version.GitVersion,
+			AnnotationRigCommit: version.GitCommit,
 		},
 		// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
 		Labels: map[string]string{
-			LabelName: params.Name,
-			LabelInstance: fmt.Sprintf("%s-%s", params.Project, params.Name),
-			LabelVersion: params.Tag,
+			LabelName:      params.Name,
+			LabelInstance:  fmt.Sprintf("%s-%s", params.Project, params.Name),
+			LabelVersion:   params.Tag,
 			LabelManagedBy: "rig",
 		},
 	}
 
 	pod := &corev1.Pod{
-		ObjectMeta: objectmeta,
+		ObjectMeta: metadata,
 	}
 
 	for name := range params.Compose.Volumes {
 		// @todo, Filter the volumes.
 
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
-			Name:                     fmt.Sprintf("volume-%s-cp", name),
-			Image:                    fmt.Sprintf("%s:%s-volume-%s", params.Repository, params.Tag, name),
-			Command:                  []string{
-				"cp", "-rp", ".", "/mnt/volume/",
+			Name:  fmt.Sprintf("volume-%s-cp", name),
+			Image: fmt.Sprintf("%s:%s-volume-%s", params.Repository, params.Tag, name),
+			Command: []string{
+				"/bin/sh", "-c",
+			},
+			Args: []string{
+				fmt.Sprintf("cp -rp . %s/", MountVolume),
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{
-					Name: name,
-					MountPath: "/mnt/volume",
+					Name:      name,
+					MountPath: MountVolume,
 				},
 			},
 		})
 
 		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
-			Name:         name,
+			Name: name,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
@@ -92,9 +116,9 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 			continue
 		}
 
-		container :=  corev1.Container{
-			Name:                     name,
-			Image:                    fmt.Sprintf("%s:%s-service-%s", params.Repository, params.Tag, name),
+		container := corev1.Container{
+			Name:  name,
+			Image: fmt.Sprintf("%s:%s-service-%s", params.Repository, params.Tag, name),
 			// @todo, Requires resource constraints.
 		}
 
@@ -118,25 +142,25 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 			}
 
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-				Name:             volName,
-				MountPath:        volValue,
+				Name:      volName,
+				MountPath: volValue,
 			})
 		}
 
 		pod.Spec.Containers = append(pod.Spec.Containers, container)
 	}
 
-	_, err := clientset.CoreV1().Pods(objectmeta.Namespace).Create(pod)
+	_, err := clientset.CoreV1().Pods(metadata.Namespace).Create(pod)
 	if err != nil {
 		if kerrors.IsAlreadyExists(err) {
-			err = clientset.CoreV1().Pods(objectmeta.Namespace).Delete(objectmeta.Name, &metav1.DeleteOptions{
+			err = clientset.CoreV1().Pods(metadata.Namespace).Delete(metadata.Name, &metav1.DeleteOptions{
 				GracePeriodSeconds: &grace,
 			})
 			if err != nil {
 				return err
 			}
 
-			_, err = clientset.CoreV1().Pods(objectmeta.Namespace).Create(pod)
+			_, err = clientset.CoreV1().Pods(metadata.Namespace).Create(pod)
 			if err != nil {
 				return err
 			}
@@ -146,42 +170,39 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 	}
 
 	service := &corev1.Service{
-		ObjectMeta: objectmeta,
+		ObjectMeta: metadata,
 		Spec: corev1.ServiceSpec{
 			ClusterIP: corev1.ClusterIPNone,
 			Ports: []corev1.ServicePort{
 				{
-					// @todo, Needs to be configurable.
-					Port: 8080,
+					Port: int32(params.Config.Ingress.Port),
 				},
 			},
-			Selector: objectmeta.Labels,
+			Selector: metadata.Labels,
 		},
 	}
 
-	_, err = clientset.CoreV1().Services(objectmeta.Namespace).Create(service)
+	_, err = clientset.CoreV1().Services(metadata.Namespace).Create(service)
 	if err != nil {
 		if kerrors.IsAlreadyExists(err) {
-			err = clientset.CoreV1().Services(objectmeta.Namespace).Delete(objectmeta.Name, &metav1.DeleteOptions{
+			err = clientset.CoreV1().Services(metadata.Namespace).Delete(metadata.Name, &metav1.DeleteOptions{
 				GracePeriodSeconds: &grace,
 			})
 			if err != nil {
 				return err
 			}
 
-			_, err = clientset.CoreV1().Services(objectmeta.Namespace).Create(service)
+			_, err = clientset.CoreV1().Services(metadata.Namespace).Create(service)
 			if err != nil {
 				return err
 			}
-
-			return nil
 		} else {
 			return err
 		}
 	}
 
 	ingress := &networkingv1beta1.Ingress{
-		ObjectMeta: objectmeta,
+		ObjectMeta: metadata,
 	}
 
 	for _, domain := range params.Domains {
@@ -193,9 +214,8 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 						{
 							Path: "/",
 							Backend: networkingv1beta1.IngressBackend{
-								ServiceName: objectmeta.Name,
-								// @todo, Needs configuration.
-								ServicePort: intstr.FromInt(8080),
+								ServiceName: metadata.Name,
+								ServicePort: intstr.FromInt(params.Config.Ingress.Port),
 							},
 						},
 					},
@@ -204,10 +224,10 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 		})
 	}
 
-	_, err = clientset.NetworkingV1beta1().Ingresses(objectmeta.Namespace).Create(ingress)
+	_, err = clientset.NetworkingV1beta1().Ingresses(metadata.Namespace).Create(ingress)
 	if err != nil {
 		if kerrors.IsAlreadyExists(err) {
-			_, err = clientset.NetworkingV1beta1().Ingresses(objectmeta.Namespace).Update(ingress)
+			_, err = clientset.NetworkingV1beta1().Ingresses(metadata.Namespace).Update(ingress)
 			if err != nil {
 				return err
 			}

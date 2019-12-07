@@ -51,8 +51,7 @@ services:
   ##################
 
   mysql-default:
-    # For "skpr2 mysql pull dev" to get the latest image.
-    image: 646598420362.dkr.ecr.ap-southeast-2.amazonaws.com/skpr-pnx-pnx-d8/mysql:dev-default-latest
+    image: mysql
     network_mode: service:nginx
 
   ##################

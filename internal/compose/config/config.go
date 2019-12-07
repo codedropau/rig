@@ -17,9 +17,10 @@ func Load(filePaths []string) (*Config, error) {
 		return load(filePaths[0])
 	}
 
-	return loadMultiplle(filePaths[0], filePaths[1:])
+	return loadMultiple(filePaths[0], filePaths[1:])
 }
 
+// Helper function to load a single file.
 func load(primary string) (*Config, error) {
 	file, err := ioutil.ReadFile(primary)
 	if err != nil {
@@ -36,7 +37,8 @@ func load(primary string) (*Config, error) {
 	return config, nil
 }
 
-func loadMultiplle(primary string, overrides []string) (*Config, error) {
+// Helper function to load multiple files.
+func loadMultiple(primary string, overrides []string) (*Config, error) {
 	config, err := load(primary)
 	if err != nil {
 		return nil, err

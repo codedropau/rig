@@ -1,10 +1,11 @@
 package config
 
-import stringutils "github.com/nickschuch/rig/internal/utils/string"
+import stringutils "github.com/codedropau/rig/internal/utils/string"
 
+// Helper function to merge configuration.
 func merge(existing *Config, override Config) error {
 	for name, service := range existing.Services {
-		// Ensure the overide has this service.
+		// Ensure the override has this service.
 		if _, ok := override.Services[name]; !ok {
 			continue
 		}
@@ -18,12 +19,6 @@ func merge(existing *Config, override Config) error {
 		if overrideService.Image != "" {
 			service.Image = overrideService.Image
 		}
-
-		ports, err := mergeWithKeyValue(service.Ports, overrideService.Ports, ":")
-		if err != nil {
-			return err
-		}
-		service.Ports = ports
 
 		environment, err := mergeWithKeyValue(service.Environment, overrideService.Environment, "=")
 		if err != nil {
@@ -41,7 +36,7 @@ func merge(existing *Config, override Config) error {
 	}
 
 	for name, volume := range existing.Volumes {
-		// Ensure the overide has this service.
+		// Ensure the override has this service.
 		if _, ok := override.Volumes[name]; !ok {
 			continue
 		}

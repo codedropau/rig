@@ -5,33 +5,33 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/nickschuch/rig/internal/compose"
-	composeconfig "github.com/nickschuch/rig/internal/compose/config"
-	"github.com/nickschuch/rig/internal/config"
-	"github.com/nickschuch/rig/internal/k8s"
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
+	"github.com/codedropau/rig/internal/config"
+	"github.com/codedropau/rig/internal/k8s"
 )
 
 type command struct {
-	Project string
-	Master string
+	Config string
+
+	Master  string
 	Kubecfg string
+
+	// Metadata applied to Kubernetes objects.
 	Namespace string
-	Name string
+	Name      string
+
+	// Information used to run the correct images.
 	Repository string
-	Tag string
+	Tag        string
+
+	// Domains which the environment will be accessible from.
 	Domains []string
 }
 
 func (cmd *command) run(c *kingpin.ParseContext) error {
-	cfg := config.Config{
-		Dockerfiles: []string{
-			"docker-compose.yml",
-		},
-		Services: []string{
-			"nginx",
-			"php-fpm",
-			"mysql-default",
-		},
+	cfg, err := config.Load(cmd.Config)
+	if err != nil {
+		return err
 	}
 
 	dc, err := composeconfig.Load(cfg.Dockerfiles)
@@ -49,23 +49,21 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		return err
 	}
 
-	project, err := compose.Project(cmd.Project)
-	if err != nil {
-		return err
-	}
-
 	params := k8s.Params{
-		Project: project,
+		Project: cfg.Project,
 
+		// Metadata applied to Kubernetes objects.
 		Namespace: cmd.Namespace,
-		Name: cmd.Name,
+		Name:      cmd.Name,
 
+		// Information used to run the correct images.
 		Repository: cmd.Repository,
-		Tag: cmd.Tag,
+		Tag:        cmd.Tag,
 
+		// Domains which the environment will be accessible from.
 		Domains: cmd.Domains,
 
-		Config: cfg,
+		Config:  cfg,
 		Compose: dc,
 	}
 
@@ -77,12 +75,20 @@ func Command(app *kingpin.Application) {
 	c := new(command)
 
 	cmd := app.Command("run", "Takes a snapshot of the existing Docker Compose stack.").Action(c.run)
+
 	cmd.Flag("master", "Tag to apply to all images when performing a snapshot.").StringVar(&c.Master)
 	cmd.Flag("kubecfg", "Tag to apply to all images when performing a snapshot.").Envar("KUBECONFIG").StringVar(&c.Kubecfg)
-	cmd.Flag("project", "Tag to apply to all images when performing a snapshot.").Envar("RIG_PROJECT").StringVar(&c.Project)
+
+	cmd.Flag("config", "Config file to load.").Default(".rig.yml").Envar("RIG_CONFIG").StringVar(&c.Config)
+
+	// Metadata applied to Kubernetes objects.
 	cmd.Flag("namespace", "Tag to apply to all images when performing a snapshot.").Required().Envar("RIG_NAMESPACE").StringVar(&c.Namespace)
+	cmd.Arg("name", "Name of the Kubernetes objects which will be provisioned.").Required().StringVar(&c.Name)
+
+	// Information used to run the correct images.
 	cmd.Flag("repository", "Tag to apply to all images when performing a snapshot.").Required().Envar("RIG_REPOSITORY").StringVar(&c.Repository)
-	cmd.Arg("name", "Tag to apply to all images when performing a snapshot.").Required().StringVar(&c.Name)
 	cmd.Arg("tag", "Tag to apply to all images when performing a snapshot.").Required().StringVar(&c.Tag)
+
+	// Domains which the environment will be accessible from.
 	cmd.Arg("domain", "Domain which this environment will be exposed.").Required().StringsVar(&c.Domains)
 }

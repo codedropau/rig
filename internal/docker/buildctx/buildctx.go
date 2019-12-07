@@ -90,6 +90,7 @@ func Package(paths ...string) (*os.File, error) {
 	return os.Open(tmp.Name())
 }
 
+// BuildTree which contains a list of files.
 func BuildTree(path string) ([]string, error) {
 	var list []string
 

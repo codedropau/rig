@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Contains a string in the slice.
 func Contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -15,6 +16,7 @@ func Contains(s []string, e string) bool {
 	return false
 }
 
+// SplitBySeparator is used for marshalling Docker Compose configuration.
 func SplitBySeparator(value, separator string) (string, string, error) {
 	sl := strings.SplitN(value, separator, 2)
 

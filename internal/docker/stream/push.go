@@ -2,7 +2,7 @@ package stream
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 )
 
@@ -26,8 +26,10 @@ func Push(w io.Writer, stream io.ReadCloser) error {
 			panic(err)
 		}
 
+		// @todo, Stream push output.
+
 		if s.Error != "" {
-			return errors.New(s.Error)
+			return fmt.Errorf("push failed: %s", s.Error)
 		}
 	}
 

@@ -1,0 +1,7 @@
+mirrors:
+  "docker.io":
+    endpoint:
+    - https://registry-1.docker.io
+  "registry.rig.svc.cluster.local:5000":
+    endpoint:
+    - http://registry.rig.svc.cluster.local:5000

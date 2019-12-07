@@ -6,27 +6,20 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/docker/docker/client"
 
-	"github.com/nickschuch/rig/internal/compose"
-	"github.com/nickschuch/rig/internal/snapshot"
-	"github.com/nickschuch/rig/internal/config"
+	"github.com/codedropau/rig/internal/config"
+	"github.com/codedropau/rig/internal/snapshot"
 )
 
 type command struct {
-	Project string
+	Config string
+
+	// Information used to run the correct images.
 	Repository string
-	Tag string
+	Tag        string
 }
 
 func (cmd *command) run(c *kingpin.ParseContext) error {
-	cfg := config.Config{
-		Services: []string{
-			"nginx",
-			"php-fpm",
-			"mysql-default",
-		},
-	}
-
-	project, err := compose.Project(cmd.Project)
+	cfg, err := config.Load(cmd.Config)
 	if err != nil {
 		return err
 	}
@@ -38,11 +31,11 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		return err
 	}
 
-	params := snapshot.Params {
-		Project: project,
-		Services: cfg.Services,
+	params := snapshot.Params{
+		Project:    cfg.Project,
+		Services:   cfg.Services,
 		Repository: cmd.Repository,
-		Tag: cmd.Tag,
+		Tag:        cmd.Tag,
 	}
 
 	err = snapshot.All(ctx, cli, params)
@@ -58,7 +51,10 @@ func Command(app *kingpin.Application) {
 	c := new(command)
 
 	cmd := app.Command("snapshot", "Takes a snapshot of the existing Docker Compose stack.").Action(c.run)
-	cmd.Flag("project", "Tag to apply to all images when performing a snapshot.").Envar("RIG_PROJECT").StringVar(&c.Project)
+
+	cmd.Flag("config", "Config file to load.").Default(".rig.yml").Envar("RIG_CONFIG").StringVar(&c.Config)
+
+	// Information used to run the correct images.
 	cmd.Flag("repository", "Tag to apply to all images when performing a snapshot.").Required().Envar("RIG_REPOSITORY").StringVar(&c.Repository)
 	cmd.Arg("tag", "Tag to apply to all images when performing a snapshot.").Required().StringVar(&c.Tag)
 }

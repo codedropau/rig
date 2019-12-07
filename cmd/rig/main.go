@@ -5,8 +5,9 @@ import (
 
 	"github.com/alecthomas/kingpin"
 
-	"github.com/nickschuch/rig/cmd/rig/run"
-	"github.com/nickschuch/rig/cmd/rig/snapshot"
+	"github.com/codedropau/rig/cmd/rig/run"
+	"github.com/codedropau/rig/cmd/rig/snapshot"
+	"github.com/codedropau/rig/cmd/rig/version"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 
 	snapshot.Command(app)
 	run.Command(app)
+	version.Command(app)
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 }

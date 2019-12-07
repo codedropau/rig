@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 )
 
+// Write a file to a specific path and the entire directory structure.
 func Write(path, data string) error {
 	directory := filepath.Dir(path)
 
