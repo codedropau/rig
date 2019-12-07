@@ -10,11 +10,10 @@ import (
 
 // Params passed to the All function.
 type Params struct {
-	Project    string
 	Services   []string
 	Repository string
 	Tag        string
-	Config *config.Config
+	Config     *config.Config
 }
 
 // All containers and volumes related to a project.

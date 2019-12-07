@@ -18,7 +18,7 @@ import (
 // Helper function to snapshot volumes associated with a project.
 func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) error {
 	projectFilter := filters.NewArgs()
-	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Project))
+	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Config.Project))
 
 	list, err := cli.VolumeList(ctx, projectFilter)
 	if err != nil {

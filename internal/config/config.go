@@ -37,8 +37,8 @@ func Load(file string) (*Config, error) {
 			Port: DefaultRoutingPort,
 		},
 		Volume: Volume{
-			From: DefaultVolumeFrom,
-			User: DefaultVolumeUser,
+			From:  DefaultVolumeFrom,
+			User:  DefaultVolumeUser,
 			Group: DefaultVolumeGroup,
 		},
 		Retention: DefaultRetention,

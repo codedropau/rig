@@ -16,7 +16,7 @@ import (
 // Helper function to snapshot containers associated with a project.
 func snapshotContainers(ctx context.Context, cli *client.Client, params Params) error {
 	projectFilter := filters.NewArgs()
-	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Project))
+	projectFilter.Add("label", fmt.Sprintf("%s=%s", LabelProject, params.Config.Project))
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,

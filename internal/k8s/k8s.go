@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 	"github.com/codedropau/rig/cmd/rig/version"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -16,6 +17,10 @@ import (
 	stringutils "github.com/codedropau/rig/internal/utils/string"
 )
 
+// ManagedBy is used to determine if this was a Rig environment.
+// @todo, Consider moving this to a separate package eg. Could be helpful if we can to "list" environments.
+const ManagedBy = "rig"
+
 const (
 	// AnnotationTTL is used to define how long an environment should be available for.
 	AnnotationTTL = "rig.io/ttl"
@@ -23,6 +28,9 @@ const (
 	AnnotationRigVersion = "rig.io/version"
 	// AnnotationRigCommit is used to determine what commit of Rig provisioned his resource.
 	AnnotationRigCommit = "rig.io/commit"
+)
+
+const (
 	// LabelName is used to discovery an object.
 	LabelName = "app.kubernetes.io/name"
 	// LabelInstance is used to discovery an object.
@@ -31,6 +39,17 @@ const (
 	LabelVersion = "app.kubernetes.io/version"
 	// LabelManagedBy is used to discovery an object.
 	LabelManagedBy = "app.kubernetes.io/managed-by"
+)
+
+const (
+	// ResourceRequestCPU which are applied to each container.
+	ResourceRequestCPU = "50m"
+	// ResourceRequestMemory which are applied to each container.
+	ResourceRequestMemory = "128Mi"
+	// ResourceLimitDefaultCPU is applied to each container when not specified.
+	ResourceLimitDefaultCPU = "150m"
+	// ResourceLimitDefaultMemory is applied to each container when not specified.
+	ResourceLimitDefaultMemory = "256Mi"
 )
 
 const (
@@ -66,16 +85,16 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 		Name:      params.Name,
 		Namespace: params.Namespace,
 		Annotations: map[string]string{
-			AnnotationTTL: params.Config.Retention.String(),
+			AnnotationTTL:        params.Config.Retention.String(),
 			AnnotationRigVersion: version.GitVersion,
-			AnnotationRigCommit: version.GitCommit,
+			AnnotationRigCommit:  version.GitCommit,
 		},
 		// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
 		Labels: map[string]string{
 			LabelName:      params.Name,
 			LabelInstance:  fmt.Sprintf("%s-%s", params.Project, params.Name),
 			LabelVersion:   params.Tag,
-			LabelManagedBy: "rig",
+			LabelManagedBy: ManagedBy,
 		},
 	}
 
@@ -112,14 +131,33 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 	}
 
 	for name, service := range params.Compose.Services {
-		if !stringutils.Contains(params.Config.Services, name) {
+		if _, ok := params.Config.Services[name]; !ok {
 			continue
+		}
+
+		cpu, err := resourceWithFallback(params.Config.Services[name].CPU, ResourceLimitDefaultCPU)
+		if err != nil {
+			return fmt.Errorf("failed to parse cpu: %w", err)
+		}
+
+		memory, err := resourceWithFallback(params.Config.Services[name].Memory, ResourceLimitDefaultMemory)
+		if err != nil {
+			return fmt.Errorf("failed to parse memory: %w", err)
 		}
 
 		container := corev1.Container{
 			Name:  name,
 			Image: fmt.Sprintf("%s:%s-service-%s", params.Repository, params.Tag, name),
-			// @todo, Requires resource constraints.
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse(ResourceRequestCPU),
+					corev1.ResourceMemory: resource.MustParse(ResourceRequestMemory),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:    cpu,
+					corev1.ResourceMemory: memory,
+				},
+			},
 		}
 
 		for _, environment := range service.Environment {
@@ -129,9 +167,8 @@ func Apply(clientset kubernetes.Interface, params Params) error {
 			}
 
 			container.Env = append(container.Env, corev1.EnvVar{
-				Name:      envName,
-				Value:     envValue,
-				ValueFrom: nil,
+				Name:  envName,
+				Value: envValue,
 			})
 		}
 

@@ -27,9 +27,11 @@ $ cat .rig.yml
 project: example
 
 services:
-  - nginx
-  - php-fpm
-  - mysql
+  nginx: {}
+  php-fpm: {}
+  mysql: {}
+    cpu: 150m
+    mem: 512Mi
 ```
 
 **Snapshot and Run**

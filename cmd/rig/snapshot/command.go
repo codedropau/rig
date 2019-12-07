@@ -31,11 +31,17 @@ func (cmd *command) run(c *kingpin.ParseContext) error {
 		return err
 	}
 
+	var services []string
+
+	for service := range cfg.Services {
+		services = append(services, service)
+	}
+
 	params := snapshot.Params{
-		Project:    cfg.Project,
-		Services:   cfg.Services,
+		Services:   services,
 		Repository: cmd.Repository,
 		Tag:        cmd.Tag,
+		Config: cfg,
 	}
 
 	err = snapshot.All(ctx, cli, params)
