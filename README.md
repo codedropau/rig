@@ -5,10 +5,9 @@ _The particular way in which a sailing boat's masts, sails, and rigging are arra
 
 Rig is a tool for snapshotting a Docker Compose stack and reproducing it on Kubernetes as a Pod.
 
-Scenarios where Rig shines:
+Rig is ideal for demoing features as part of a CI pipeline.
 
-* Pull request environments
-* Demoing features
+![](diagram.png)
 
 ## Usage
 
