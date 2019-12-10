@@ -3,16 +3,16 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	composeconfig "github.com/codedropau/rig/internal/compose/config"
-	stringutils "github.com/codedropau/rig/internal/utils/string"
 	"os"
 
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
+	composeconfig "github.com/codedropau/rig/internal/compose/config"
+	stringutils "github.com/codedropau/rig/internal/utils/string"
 	dockerauth "github.com/codedropau/rig/internal/docker/auth"
-	"github.com/codedropau/rig/internal/docker/buildctx"
 	"github.com/codedropau/rig/internal/docker/stream"
 	"github.com/codedropau/rig/internal/utils/file"
 )
@@ -53,7 +53,7 @@ func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) err
 
 		fmt.Printf("Snapshotting volume '%s' to '%s:%s'\n", name, params.Repository, tag)
 
-		tmpl := "FROM %s\nWORKDIR /volume\nADD --chown=%s:%s %s /volume"
+		tmpl := "FROM %s\nWORKDIR /volume\nADD --chown=%s:%s %s /volume\nRUN chmod -R 775 /volume"
 
 		err = file.Write(dockerfilePath, fmt.Sprintf(tmpl, params.Config.Volume.From, params.Config.Volume.User, params.Config.Volume.Group, volume.Options["device"]))
 		if err != nil {
@@ -61,15 +61,21 @@ func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) err
 		}
 		defer os.Remove(dockerfilePath)
 
-		build, err := buildctx.Package(dockerfilePath, volume.Options["device"])
+		options := &archive.TarOptions{
+			IncludeFiles: []string{
+				dockerfilePath,
+				volume.Options["device"],
+			},
+		}
+
+		reader, err := archive.TarWithOptions("/", options)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(build.Name())
 
 		reference := fmt.Sprintf("%s:%s", params.Repository, tag)
 
-		output, err := cli.ImageBuild(ctx, build, types.ImageBuildOptions{
+		output, err := cli.ImageBuild(ctx, reader, types.ImageBuildOptions{
 			Dockerfile: dockerfilePath,
 			Tags: []string{
 				reference,
