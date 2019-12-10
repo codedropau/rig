@@ -1,7 +1,14 @@
 Rig
 ===
 
-_A rig is an arrangement of items used for fishing. It can be assembled of one or more lines, hooks, sinkers, bobbers, swivels, lures, beads, and other fishing tackle. A rig might be held by a rod, by hand, or attached to a boat or pier._
+_The particular way in which a sailing boat's masts, sails, and rigging are arranged._
+
+Rig is a tool for snapshotting a Docker Compose stack and reproducing it on Kubernetes as a Pod.
+
+Scenarios where Rig shines:
+
+* Pull request environments
+* Demoing features
 
 ## Usage
 
