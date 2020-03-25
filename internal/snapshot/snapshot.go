@@ -12,6 +12,8 @@ import (
 // Params passed to the All function.
 type Params struct {
 	Services   []string
+	Username string
+	Password string
 	Repository string
 	Tag        string
 	Compose *composeconfig.Config

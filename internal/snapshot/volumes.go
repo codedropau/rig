@@ -90,8 +90,7 @@ func snapshotVolumes(ctx context.Context, cli *client.Client, params Params) err
 			return err
 		}
 
-		// @todo, Needs authentication.
-		auth, err := dockerauth.Base64("user", "password")
+		auth, err := dockerauth.Base64(params.Username, params.Password)
 		if err != nil {
 			return err
 		}

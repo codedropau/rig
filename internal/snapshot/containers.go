@@ -44,7 +44,7 @@ func snapshotContainers(ctx context.Context, cli *client.Client, params Params) 
 			return err
 		}
 
-		auth, err := dockerauth.Base64("user", "password")
+		auth, err := dockerauth.Base64(params.Username, params.Password)
 		if err != nil {
 			return err
 		}

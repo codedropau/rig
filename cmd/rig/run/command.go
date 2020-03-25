@@ -4,6 +4,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"github.com/skpr/awsutils/eks"
 
 	composeconfig "github.com/codedropau/rig/internal/compose/config"
 	"github.com/codedropau/rig/internal/config"
@@ -12,6 +13,10 @@ import (
 
 type command struct {
 	Config string
+
+	// Authentication used when connecting to a cluster.
+	Username string
+	Password string
 
 	Master  string
 	Kubecfg string
@@ -26,6 +31,11 @@ type command struct {
 
 	// Domains which the environment will be accessible from.
 	Domains []string
+}
+
+type AWS struct {
+	Cluster eks.Cluster
+
 }
 
 func (cmd *command) run(c *kingpin.ParseContext) error {
@@ -78,6 +88,9 @@ func Command(app *kingpin.Application) {
 
 	cmd.Flag("master", "Tag to apply to all images when performing a snapshot.").StringVar(&c.Master)
 	cmd.Flag("kubecfg", "Tag to apply to all images when performing a snapshot.").Envar("KUBECONFIG").StringVar(&c.Kubecfg)
+
+	cmd.Flag("username", "Username used to authenticate with the Kubernetes cluster.").Required().Envar("RIG_USERNAME").StringVar(&c.Username)
+	cmd.Flag("password", "Password used to authenticate with the Kubernetes cluster.").Required().Envar("RIG_PASSWORD").StringVar(&c.Password)
 
 	cmd.Flag("config", "Config file to load.").Default(".rig.yml").Envar("RIG_CONFIG").StringVar(&c.Config)
 

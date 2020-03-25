@@ -5,13 +5,13 @@ export CGO_ENABLED=0
 VERSION=$(shell git describe --tags --always)
 COMMIT=$(shell git rev-list -1 HEAD)
 
+PROJECT=github.com/codedropau/rig
+
 # Builds the project.
 build:
-	gox -os='linux darwin' \
-	    -arch='amd64' \
-	    -output='bin/rig_{{.OS}}_{{.Arch}}' \
-	    -ldflags='-extldflags "-static" -X github.com/codedropau/rig/cmd/rig/version.GitVersion=${VERSION} -X github.com/codedropau/rig/cmd/rig/version.GitCommit=${COMMIT}' \
-	    github.com/codedropau/rig/cmd/rig
+	# @todo, Reinstate when ready to continue development.
+	# gox -os='linux darwin' -arch='amd64' -output='bin/rig_{{.OS}}_{{.Arch}}' -ldflags='-extldflags "-static"' ${PROJECT}/cmd/rig
+	gox -os='linux darwin' -arch='amd64' -output='bin/rig-router_{{.OS}}_{{.Arch}}' -ldflags='-extldflags "-static"' ${PROJECT}/cmd/rig-router
 
 # Run all lint checking with exit codes for CI.
 lint:
