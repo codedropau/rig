@@ -7,9 +7,9 @@ Rig is a tool for snapshotting a Docker Compose stack and reproducing it on Kube
 
 Rig is ideal for demoing features as part of a CI pipeline.
 
-![](diagram.png)
-
 ## Usage
+
+![](diagram.jpg)
 
 **Prepare**
 
