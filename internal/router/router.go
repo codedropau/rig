@@ -1,14 +1,15 @@
 package router
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"html/template"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
-	"github.com/goji/httpauth"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -132,7 +133,24 @@ func Run(addr string, clientset kubernetes.Interface, refresh time.Duration, use
 		proxy.ServeHTTP(w, r)
 	})
 
-	http.Handle("/", httpauth.SimpleBasicAuth(username, password)(handler))
+	return http.ListenAndServe(addr, Auth(handler, username, password, "Restricted"))
+}
 
-	return http.ListenAndServe(addr, nil)
+func Auth(handler http.HandlerFunc, username, password, realm string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.UserAgent(), "Sajaribot") {
+			return
+		}
+
+		user, pass, ok := r.BasicAuth()
+
+		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			w.WriteHeader(401)
+			w.Write([]byte("Unauthorised.\n"))
+			return
+		}
+
+		handler(w, r)
+	}
 }
