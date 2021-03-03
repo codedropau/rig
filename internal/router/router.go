@@ -142,6 +142,10 @@ func Auth(handler http.HandlerFunc, username, password, realm string) http.Handl
 			return
 		}
 
+		if strings.HasPrefix(r.URL.Path, "/graphql") {
+			return
+		}
+
 		user, pass, ok := r.BasicAuth()
 
 		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
